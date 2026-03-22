@@ -1,5 +1,6 @@
 import "server-only";
 
+import { generateGeminiText } from "./gemini";
 import type { DevOpsIncident } from "./incident-types";
 
 type GenerateIncidentOptions = {
@@ -7,9 +8,6 @@ type GenerateIncidentOptions = {
   endpoint?: string;
   model?: string;
 };
-
-const DEFAULT_ENDPOINT = "https://api.openai.com/v1/responses";
-const DEFAULT_MODEL = "gpt-4.1-mini";
 
 const RESPONSE_SCHEMA = {
   type: "object",
@@ -54,107 +52,40 @@ const RESPONSE_SCHEMA = {
 export async function generateRandomIncident(
   options: GenerateIncidentOptions = {},
 ): Promise<DevOpsIncident> {
-  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY for incident generation.");
-  }
-
-  const endpoint = options.endpoint ?? process.env.OPENAI_API_URL ?? DEFAULT_ENDPOINT;
-  const model = options.model ?? process.env.OPENAI_MODEL ?? DEFAULT_MODEL;
-
+  const model =
+    options.model ??
+    process.env.GEMINI_INCIDENT_MODEL ??
+    process.env.GEMINI_MODEL;
+  const baseUrl = options.endpoint ?? process.env.GEMINI_API_URL;
   const randomToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.9,
-      text: {
-        format: {
-          type: "json_schema",
-          name: "devops_incident",
-          schema: RESPONSE_SCHEMA,
-        },
-      },
-      input: [
-        {
-          role: "system",
-          content: [
-            {
-              type: "input_text",
-              text: [
-                "Generate realistic but concise DevOps production incidents.",
-                "Return JSON only.",
-                "Keep logs realistic and compact.",
-              ].join(" "),
-            },
-          ],
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "input_text",
-              text: [
-                "Generate one random incident with these fields:",
-                "serviceName, region, errorRate, issue, logs, symptoms, correctDebuggingSteps, finalSolution.",
-                "logs must contain 3 to 5 lines.",
-                `Randomness token: ${randomToken}`,
-              ].join(" "),
-            },
-          ],
-        },
-      ],
-    }),
-    cache: "no-store",
+  const outputText = await generateGeminiText({
+    model,
+    baseUrl,
+    apiKey: options.apiKey,
+    temperature: 0.9,
+    maxOutputTokens: 700,
+    systemInstruction: [
+      "Generate realistic but concise DevOps production incidents.",
+      "Return only valid JSON. No markdown.",
+      "Keep logs compact and operationally plausible.",
+    ].join(" "),
+    prompt: [
+      "Generate one random incident with these fields:",
+      "serviceName, region, errorRate, issue, logs, symptoms, correctDebuggingSteps, finalSolution.",
+      "Constraints:",
+      "- logs: 3 to 5 lines",
+      "- symptoms: 1 to 5",
+      "- correctDebuggingSteps: 3 to 6",
+      "- Keep outputs concise.",
+      `Randomness token: ${randomToken}`,
+      "",
+      "Return JSON exactly in this shape:",
+      JSON.stringify(RESPONSE_SCHEMA, null, 2),
+    ].join("\n"),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Incident generation failed (${response.status}): ${errorText.slice(0, 300)}`,
-    );
-  }
-
-  const payload: unknown = await response.json();
-  const outputText = extractText(payload);
   const parsedJson = JSON.parse(extractJson(outputText)) as unknown;
   return validateIncident(parsedJson);
-}
-
-function extractText(payload: unknown): string {
-  if (!isObject(payload)) {
-    throw new Error("AI response is not an object.");
-  }
-
-  const outputText = payload.output_text;
-  if (typeof outputText === "string" && outputText.trim()) {
-    return outputText;
-  }
-
-  const output = payload.output;
-  if (Array.isArray(output)) {
-    for (const item of output) {
-      if (!isObject(item) || !Array.isArray(item.content)) {
-        continue;
-      }
-
-      for (const part of item.content) {
-        if (!isObject(part)) {
-          continue;
-        }
-        if (typeof part.text === "string" && part.text.trim()) {
-          return part.text;
-        }
-      }
-    }
-  }
-
-  throw new Error("AI response did not contain text output.");
 }
 
 function extractJson(text: string): string {

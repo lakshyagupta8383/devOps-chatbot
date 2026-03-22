@@ -1,5 +1,11 @@
-
+import type { Metadata } from "next";
 import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "OnCall Mentor",
+  description:
+    "Incident-response chatbot simulator with hidden scenarios, runbook-grounded guidance, and solution evaluation.",
+};
 
 export default function RootLayout({
   children,
@@ -8,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }

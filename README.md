@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# OnCall Mentor
 
-## Getting Started
+OnCall Mentor is an incident-response training chatbot. It generates a hidden
+DevOps production incident, guides a junior engineer through debugging, and
+evaluates the final diagnosis against the scenario's correct solution.
 
-First, run the development server:
+## Product Scope
+
+- Topic: DevOps incident response and production debugging
+- Knowledge base: runbook-style snippets in [`lib/knowledge-base.ts`](lib/knowledge-base.ts)
+- Scenario engine: randomized incident JSON generation in
+  [`lib/generateRandomIncident.ts`](lib/generateRandomIncident.ts)
+- Chat behavior:
+  - grounded logs/metrics from scenario JSON only
+  - root cause not revealed directly
+  - hypothesis-driven guidance
+- Evaluation:
+  - verdict (`correct`, `partially correct`, `incorrect`)
+  - score (0-10)
+  - explanation + missed points
+
+## Tech Stack
+
+- Next.js 16 (App Router)
+- Tailwind CSS (v4 via `@import "tailwindcss"`)
+- Gemini API (chat, evaluation, incident generation)
+
+## Local Setup
+
+1. Install dependencies
+
+```bash
+npm install
+```
+
+2. Create `.env.local`
+
+```bash
+GEMINI_API_KEY=your_key_here
+GEMINI_MODEL=gemini-2.0-flash
+GEMINI_CHAT_MODEL=gemini-2.0-flash
+GEMINI_EVAL_MODEL=gemini-2.0-flash
+GEMINI_INCIDENT_MODEL=gemini-2.0-flash
+```
+
+3. Start development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Routes
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `GET /api/incidents/random`: generates (or falls back to) one incident scenario
+- `POST /api/chat`: senior DevOps guidance using incident + conversation context
+- `POST /api/evaluate`: evaluates user's diagnosis against correct solution
 
-## Learn More
+## Deployment (Vercel)
 
-To learn more about Next.js, take a look at the following resources:
+1. Push repository to GitHub
+2. Import project into Vercel
+3. Add environment variables from `.env.local`
+4. Deploy
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Use Vercel production logs to monitor model errors and fallback usage.

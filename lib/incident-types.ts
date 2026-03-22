@@ -16,10 +16,26 @@ export type ChatTurn = {
   content: string;
 };
 
-export type IncidentEvaluation = {
-  symptomCoverage: number;
-  debuggingCoverage: number;
-  rootCauseMentioned: boolean;
-  solutionMentioned: boolean;
-  solved: boolean;
+export type ChatReferenceSource =
+  | "incident-log"
+  | "incident-symptom"
+  | "incident-debug-step"
+  | "incident-metric"
+  | "knowledge-base"
+  | "fallback";
+
+export type ChatReference = {
+  id: string;
+  source: ChatReferenceSource;
+  label: string;
+  evidence: string;
+};
+
+export type EvaluationVerdict = "correct" | "partially correct" | "incorrect";
+
+export type SolutionEvaluation = {
+  verdict: EvaluationVerdict;
+  explanation: string;
+  whatMissed: string[];
+  score: number;
 };
