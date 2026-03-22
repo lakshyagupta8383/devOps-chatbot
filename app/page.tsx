@@ -1,3 +1,4 @@
+import ChatInterface from "./components/ChatInterface";
 import IncidentPanel from "./components/IncidentPanel";
 
 export default function Home() {
@@ -18,7 +19,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="flex-1 rounded-md border border-dashed border-zinc-700 bg-[#070b0a]" />
+          <ChatInterface />
         </section>
       </section>
     </main>

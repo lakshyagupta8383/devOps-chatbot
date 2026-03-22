@@ -1,15 +1,6 @@
 import "server-only";
 
-export type DevOpsIncident = {
-  serviceName: string;
-  region: string;
-  errorRate: string;
-  issue: string;
-  logs: string[];
-  symptoms: string[];
-  correctDebuggingSteps: string[];
-  finalSolution: string;
-};
+import type { DevOpsIncident } from "./incident-types";
 
 type GenerateIncidentOptions = {
   apiKey?: string;
